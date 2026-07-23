@@ -1,0 +1,19 @@
+# Важно: python 3.10 и ray 2.10 (используется старый стэк api, так что можно и ранее, но не рекомендуется)
+
+numpy==1.24.3
+gymnasium==0.28.1
+
+ray[rllib]==2.10.0
+ray[tune]==2.10.0
+
+pybind11==2.11.1
+
+torch==2.1.2
+torchvision==0.16.2
+ncps==1.0.1
+
+matplotlib==3.7.5
+
+pyarrow==20.0.0
+
+websockets
