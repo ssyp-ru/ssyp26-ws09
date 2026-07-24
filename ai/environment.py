@@ -45,9 +45,6 @@ class MazeEnvironment(gym.Env):
 
         self.chromosome_apply_mode = True
 
-    def maze_from_chromosome(self, chromosome) -> dict:
-        return bsc_core.generate_with_genome(chromosome, self.maze_size)
-
     def reset(self, *, seed: int = None, options: dict = None) -> tuple:
         super().reset(seed=seed)
         self.total_reward = 0.0
@@ -73,8 +70,13 @@ class MazeEnvironment(gym.Env):
                         self.maze_size = current_stage_size
 
             self.current_maze = bsc_core.generate_with_genome(self.current_chromosome, self.maze_size)
+            
+        else:
+            if self.current_maze is None:
 
-        self.current_maze = self.maze_from_chromosome(self.current_chromosome)
+                self.current_chromosome = bsc_core.random_generate(self.maze_size)
+                self.current_maze = bsc_core.generate_with_genome(self.current_chromosome, self.maze_size)
+
 
         self.cur_maze_mat = self.current_maze.get("mat")
 

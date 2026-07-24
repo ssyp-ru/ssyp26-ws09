@@ -1,0 +1,109 @@
+[gd_scene format=3 uid="uid://d18ku3d420n1f"]
+
+[ext_resource type="Script" uid="uid://n0d6ahhyqjhl" path="res://scripts/choose_maze.gd" id="1_8p1yi"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_cdk1j"]
+font_size = 32
+
+[node name="Control" type="Control" unique_id=1095188270]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_8p1yi")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=860510358]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+color = Color(0.6, 0.6, 0.6, 1)
+
+[node name="to main menu" type="Button" parent="." unique_id=137512193]
+layout_mode = 0
+offset_left = 951.0
+offset_top = 12.0
+offset_right = 1139.0
+offset_bottom = 46.0
+text = "вернуться на главную"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=885143258]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 15.0
+offset_right = 435.0
+offset_bottom = 663.0
+theme_override_constants/separation = 15
+
+[node name="GridContainer" type="GridContainer" parent="VBoxContainer" unique_id=1992627997]
+layout_mode = 2
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 15
+
+[node name="Button" type="Button" parent="VBoxContainer/GridContainer" unique_id=1808735711]
+custom_minimum_size = Vector2(500, 100)
+layout_mode = 2
+
+[node name="Button2" type="Button" parent="VBoxContainer/GridContainer" unique_id=2073895071]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="Button3" type="Button" parent="VBoxContainer/GridContainer" unique_id=1322501280]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="Button4" type="Button" parent="VBoxContainer/GridContainer" unique_id=1355485340]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="Button5" type="Button" parent="VBoxContainer/GridContainer" unique_id=190705068]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=528930474]
+layout_mode = 2
+
+[node name="previous" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1422738557]
+custom_minimum_size = Vector2(60, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "<"
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer" unique_id=61158603]
+layout_mode = 2
+text = "1/1"
+label_settings = SubResource("LabelSettings_cdk1j")
+
+[node name="next" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1472414653]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = ">"
+
+[node name="GridContainer" type="GridContainer" parent="." unique_id=158328937]
+visible = false
+layout_mode = 0
+offset_left = 610.0
+offset_top = 54.0
+offset_right = 930.0
+offset_bottom = 524.0
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 44
+
+[node name="PanelContainer" type="PanelContainer" parent="GridContainer" unique_id=1043783999]
+custom_minimum_size = Vector2(320, 320)
+custom_maximum_size = Vector2(320, 320)
+layout_mode = 2
+
+[node name="Control" type="Control" parent="GridContainer/PanelContainer" unique_id=1268010926]
+custom_minimum_size = Vector2(320, 320)
+custom_maximum_size = Vector2(320, 320)
+layout_mode = 2
+
+[node name="Ai play" type="Button" parent="GridContainer" unique_id=1384381280]
+custom_minimum_size = Vector2(320, 100)
+custom_maximum_size = Vector2(370, 100)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Посмотреть прохождение ИИ"

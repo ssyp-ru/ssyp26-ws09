@@ -7,9 +7,11 @@ import bsc_core
 import json
 from pathlib import Path
 
-MAZE_SIZE = 128
+from matplotlib.colors import ListedColormap
+
+MAZE_SIZE = 8
 GENERATIONS_DIR = "../generations"
-GENDEMO_DIR = "/demo_generations/"
+GENDEMO_DIR = "./demo_generations/"
 
 cur_generations, cur_genome = 0, 0
 
@@ -52,11 +54,11 @@ for generation in sorted(valid_generations, key=get_generation_number):
         matrix = maze_dict.get("mat")
         start_pos = maze_dict.get("start")
         finish_pos = maze_dict.get("finish")
-        cmap = plt.cm.binary
+        maze_cmap = ListedColormap(['#1a1a1a', '#ffffff', '#2ecc71'])
 
-        plt.figure(figsize=(10, 10), dpi=150)
+        fig, ax = plt.subplots(figsize=(10, 10), dpi=150)
         
-        plt.imshow(matrix, cmap=cmap, origin="upper")
+        ax.imshow(matrix, cmap=maze_cmap, origin="upper")
 
         start_x = start_pos[1]
         start_y = start_pos[0]
@@ -70,18 +72,18 @@ for generation in sorted(valid_generations, key=get_generation_number):
         gen_x = int(chromosome[first_dot + 1: second_dot])
         gen_y = int(chromosome[:first_dot])
 
-        plt.scatter(start_x, start_y, color="green", s=150, marker='s', label="Старт агента", alpha=0.7)
-        plt.scatter(finish_x, finish_y, color="red", s=150, marker='x', label="Финиш агента")
+        ax.scatter(start_x, start_y, color="green", s=150, marker='s', label="Старт агента", alpha=0.7)
+        ax.scatter(finish_x, finish_y, color="red", s=150, marker='x', label="Финиш агента")
 
-        plt.scatter(gen_x, gen_y, color="blue", s=50, marker="o", alpha=0.6, label=f"Точка зарождения ГЛ ({gen_x}, {gen_y})")
+        ax.scatter(gen_x, gen_y, color="blue", s=50, marker="o", alpha=0.6, label=f"Точка зарождения ГЛ ({gen_x}, {gen_y})")
 
-        plt.title(f"Коэволюционный лабиринт №{k + 1} поколения {g}", fontsize=14, pad=15)
-        plt.text(3, MAZE_SIZE - 5, f"Fitness Score: {fitness_score:.2f}", 
+        ax.set_title(f"Коэволюционный лабиринт №{k + 1} поколения {g}", fontsize=14, pad=15)
+        fig.text(0.68, 0.14, f"Fitness Score: {fitness_score:.2f}", 
                  fontsize=12, fontweight='bold', color='black',
                  bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray', boxstyle='round,pad=0.5'))
 
-        plt.legend(loc="upper right", fontsize=10)
-        plt.axis("off")
+        ax.legend(loc="upper right", fontsize=10)
+        ax.axis("off")
 
         output_path = gendemo_path.joinpath(f"generation{g}").joinpath(f"genome{k + 1}.png")
         plt.savefig(output_path, bbox_inches="tight")

@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://q2xxa4x77adh"]
+
+[ext_resource type="Texture2D" uid="uid://c1nn6xu4bby24" path="res://brick-texture-red-dark-variated-color-wall-surface-pattern-rectangle-5-750x750.jpg" id="1_g3tps"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ft8e1"]
+albedo_texture = ExtResource("1_g3tps")
+
+[sub_resource type="BoxMesh" id="BoxMesh_cdk1j"]
+material = SubResource("StandardMaterial3D_ft8e1")
+
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_heqtu"]
+data = PackedVector3Array(-0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" unique_id=844005261]
+mesh = SubResource("BoxMesh_cdk1j")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=2017409693]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=713220299]
+shape = SubResource("ConcavePolygonShape3D_heqtu")

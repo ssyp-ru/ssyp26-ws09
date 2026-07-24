@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://due6ktfy7mqan"]
+
+[ext_resource type="Texture2D" uid="uid://dcvkovgqgxdyf" path="res://74337.750x0.jpg" id="1_oj3tl"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ft8e1"]
+albedo_texture = ExtResource("1_oj3tl")
+
+[sub_resource type="BoxMesh" id="BoxMesh_cdk1j"]
+material = SubResource("StandardMaterial3D_ft8e1")
+
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_oj3tl"]
+data = PackedVector3Array(-0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" unique_id=2055985912]
+mesh = SubResource("BoxMesh_cdk1j")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=2076101452]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1652386082]
+shape = SubResource("ConcavePolygonShape3D_oj3tl")

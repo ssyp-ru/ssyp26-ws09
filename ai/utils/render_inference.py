@@ -3,6 +3,8 @@ import matplotlib
 matplotlib.use("Agg") 
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+
 import numpy as np
 import torch
 import json
@@ -13,7 +15,7 @@ from ai.model import RLTwoLayerCfcModel
 from ai.environment import MazeEnvironment
 
 
-def render_agent_trajectory(checkpoint_path: str, chromosome_json_path: str, output_image_path: str = "agent_trajectory.png", idx: int = 12):
+def render_agent_trajectory(checkpoint_path: str, chromosome_json_path: str, output_image_path: str = "agent_trajectory.png", idx: int = 12, maze_size: int = 128):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[ИНФЕРЕНС] Используем устройство: {device}")
 
@@ -42,7 +44,7 @@ def render_agent_trajectory(checkpoint_path: str, chromosome_json_path: str, out
     target_data = population_data[idx]
     chromosome = target_data["chromosome"]
 
-    env_config = {"maze_size": 128, "diamond_radius": 5, "maze_manager": None}
+    env_config = {"maze_size": maze_size, "diamond_radius": 5, "maze_manager": None}
     env = MazeEnvironment(config=env_config)
     env.chromosome_apply_mode = True
     env.current_chromosome = chromosome
@@ -88,27 +90,29 @@ def render_agent_trajectory(checkpoint_path: str, chromosome_json_path: str, out
 
     matrix = np.array(env.cur_maze_mat)
 
-    plt.figure(figsize=(12, 12), dpi=150)
+    fig, ax = plt.subplots(figsize=(12, 12), dpi=150)
+    
+    maze_cmap = ListedColormap(['#1a1a1a', '#ffffff', '#2ecc71']) 
 
-    plt.imshow(matrix, cmap=plt.cm.binary, origin="upper")
+    plt.imshow(matrix, cmap=maze_cmap, origin="upper")
 
     visited_map = np.array(env.visited)
     masked_visited = np.ma.masked_where(visited_map == 0, visited_map)
-    plt.imshow(masked_visited, cmap=plt.cm.autumn, origin="upper", alpha=0.4)
+    ax.imshow(masked_visited, cmap=plt.cm.autumn, origin="upper", alpha=0.4)
 
-    plt.plot(path_x, path_y, color="#3498db", linewidth=1.5, alpha=0.8, label="Путь агента (CfC Memory)", zorder=3)
+    ax.plot(path_x, path_y, color="#3498db", linewidth=1.5, alpha=0.8, label="Путь агента (CfC Memory)", zorder=3)
 
-    plt.scatter(path_x[-1], path_y[-1], color="cyan", s=80, marker="o", edgecolors="black", label="Конечная точка агента", zorder=4)
+    ax.scatter(path_x[-1], path_y[-1], color="cyan", s=80, marker="o", edgecolors="black", label="Конечная точка агента", zorder=4)
 
-    plt.scatter(env.start[0], env.start[1], color="green", s=45, marker='s', alpha=0.8, edgecolors="black", label=f"Старт ({env.start[0]}, {env.start[1]})", zorder=5)
-    plt.scatter(env.finish[0], env.finish[1], color="red", s=45, marker='x', alpha=0.8, linewidths=2, label=f"Финиш ({env.finish[0]}, {env.finish[1]})", zorder=5)
+    ax.scatter(env.start[0], env.start[1], color="green", s=45, marker='s', alpha=0.8, edgecolors="black", label=f"Старт ({env.start[0]}, {env.start[1]})", zorder=5)
+    ax.scatter(env.finish[0], env.finish[1], color="red", s=45, marker='x', alpha=0.8, linewidths=2, label=f"Финиш ({env.finish[0]}, {env.finish[1]})", zorder=5)
 
     first_dot = chromosome.find('.')
     second_dot = chromosome.find('.', first_dot + 1)
     gen_y = int(chromosome[:first_dot])
     gen_x = int(chromosome[first_dot + 1:second_dot])
 
-    plt.scatter(gen_x, gen_y, color="blue", s=50, marker="o", alpha=0.5, edgecolors="black", label="Точка зарождения ГА", zorder=4)
+    ax.scatter(gen_x, gen_y, color="blue", s=50, marker="o", alpha=0.5, edgecolors="black", label="Точка зарождения ГА", zorder=4)
 
     status_str = "ДОШЕЛ ДО ЦЕЛИ" if success else "ЗАСТРЯЛ В КОРИДОРЕ"
     info_text = (
@@ -116,20 +120,21 @@ def render_agent_trajectory(checkpoint_path: str, chromosome_json_path: str, out
         f"Всего шагов: {env.steps_cnt}\n"
         f"Набрано наград: {total_reward:.2f}"
     )
-    plt.text(3, 10, info_text, fontsize=11, fontweight='bold', color='black',
+    fig.text(0.14, 0.82, info_text, fontsize=11, fontweight='bold', color='black',
         bbox=dict(facecolor='white', alpha=0.85, edgecolor='gray', boxstyle='round,pad=0.5'), zorder=6)
 
-    plt.title(f"Визуализация траектории инференса CfC-агента (Размер {env.maze_size}x{env.maze_size})", fontsize=14, pad=15)
-    plt.legend(loc="upper right", fontsize=10)
-    plt.axis("off")
+    ax.set_title(f"Визуализация траектории инференса CfC-агента (Размер {env.maze_size}x{env.maze_size})", fontsize=14, pad=15)
+    ax.legend(loc="upper right", fontsize=10)
+    ax.axis("off")
 
     plt.savefig(output_image_path, bbox_inches="tight")
     plt.close()
 
 if __name__ == "__main__":
-    PATH_TO_WEIGHTS = "../ai/models/model_gen_{поколение}.pth" 		# Путь к модели для инференса
-    PATH_TO_JSON = "../ai/generations/generation_{поколение}.json" 	# Путь к .json файлу с хромосомами лабиринта.
-    CHROMOSOME_IDX = 12 						# Номер хромосомы в файле.
+    PATH_TO_WEIGHTS = "../models/model_gen_{поколение}.pth" 		# Путь к модели для инференса
+    PATH_TO_JSON = "../generations/generation_{поколение}.json" 	# Путь к .json файлу с хромосомами лабиринта.
+    CHROMOSOME_IDX = 14 											# Номер хромосомы в файле.
+    MAZE_SIZE = 8													# Размер лабиринта
     
-    render_agent_trajectory(PATH_TO_WEIGHTS, PATH_TO_JSON, "agent_trajectory.png", CHROMOSOME_IDX)
+    render_agent_trajectory(PATH_TO_WEIGHTS, PATH_TO_JSON, "agent_trajectory.png", CHROMOSOME_IDX, MAZE_SIZE)
 

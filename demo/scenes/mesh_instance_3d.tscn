@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://bng81w4s1uxbc"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_cdk1j"]
+size = Vector2(6, 5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" unique_id=1853890403]
+mesh = SubResource("PlaneMesh_cdk1j")

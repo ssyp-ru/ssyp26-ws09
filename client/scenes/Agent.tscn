@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://bdahl2dqe2mt1"]
+
+[ext_resource type="Script" uid="uid://n1x5xdkmj30m" path="res://scripts/steper.gd" id="1_kuxo3"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_u3fqp"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_gjcqa"]
+
+[node name="Agent" type="CharacterBody3D" unique_id=156105261]
+script = ExtResource("1_kuxo3")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1016864991]
+mesh = SubResource("CylinderMesh_u3fqp")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=523754102]
+shape = SubResource("CylinderShape3D_gjcqa")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1198867269]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5542108, 0)

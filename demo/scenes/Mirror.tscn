@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://c7vgy8k0j7yrf"]
+
+[ext_resource type="Script" uid="uid://cuhmqgaxqh1xw" path="res://mesh_instance_3d.gd" id="1_i0d4c"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_i0d4c"]
+viewport_path = NodePath("MeshInstance3D/SubViewport")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r4l3t"]
+resource_local_to_scene = true
+albedo_texture = SubResource("ViewportTexture_i0d4c")
+metallic = 1.0
+roughness = 0.0
+uv1_scale = Vector3(-1, 1, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ft8e1"]
+resource_local_to_scene = true
+material = SubResource("StandardMaterial3D_r4l3t")
+size = Vector2(4, 4)
+
+[node name="Node3D" type="Node3D" unique_id=690677351]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=73503134]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0)
+mesh = SubResource("PlaneMesh_ft8e1")
+script = ExtResource("1_i0d4c")
+
+[node name="SubViewport" type="SubViewport" parent="MeshInstance3D" unique_id=1172851023]
+canvas_item_default_texture_repeat = 2
+audio_listener_enable_3d = true
+size_2d_override = Vector2i(512, 512)
+render_target_update_mode = 4
+
+[node name="Camera3D" type="Camera3D" parent="MeshInstance3D/SubViewport" unique_id=837378582]
+transform = Transform3D(-1, 0, -1.509958e-07, 0, 1, 0, 1.509958e-07, 0, -1, 0, 0, 0)
+current = true

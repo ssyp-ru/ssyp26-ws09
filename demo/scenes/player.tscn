@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://cjlxoy65uqiow"]
+
+[ext_resource type="Texture2D" uid="uid://i2xlyp6p0o6q" path="res://Мастер.jpg" id="2_i3pqv"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cdk1j"]
+resource_local_to_scene = true
+albedo_texture = ExtResource("2_i3pqv")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_cdk1j"]
+resource_local_to_scene = true
+material = SubResource("StandardMaterial3D_cdk1j")
+height = 2.6242676
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_cdk1j"]
+height = 2.6269531
+
+[node name="CharacterBody3D" type="CharacterBody3D" unique_id=1062744876]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=498774329]
+transform = Transform3D(-0.99933964, 0, 0.036331646, 0, 1, 0, -0.036331646, 0, -0.99933964, 0, -0.3121338, 0)
+mesh = SubResource("CapsuleMesh_cdk1j")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=640496193]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.31347656, 0)
+shape = SubResource("CapsuleShape3D_cdk1j")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1028058635]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5773843, -0.113704085)

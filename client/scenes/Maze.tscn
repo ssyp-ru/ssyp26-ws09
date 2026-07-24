@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://djpkfd3utp5qo"]
+
+[ext_resource type="Script" uid="uid://d3hwtwcpb1ohr" path="res://scripts/gen_maze.gd" id="1_my7j6"]
+[ext_resource type="MeshLibrary" uid="uid://boa78hl6m6x2k" path="res://mesh_libraries/bipbip.tres" id="1_tqvdc"]
+[ext_resource type="PackedScene" uid="uid://bdahl2dqe2mt1" path="res://scenes/Agent.tscn" id="3_h1dk6"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_tqvdc"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_my7j6"]
+sky_material = SubResource("ProceduralSkyMaterial_tqvdc")
+
+[sub_resource type="Environment" id="Environment_h1dk6"]
+background_mode = 2
+sky = SubResource("Sky_my7j6")
+
+[node name="Maze" type="Node3D" unique_id=391989465]
+script = ExtResource("1_my7j6")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=848271926]
+environment = SubResource("Environment_h1dk6")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=305675838]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 26.49329, 0)
+shadow_enabled = true
+
+[node name="GridMap" type="GridMap" parent="." unique_id=812400885]
+mesh_library = ExtResource("1_tqvdc")
+cell_scale = 2.0
+
+[node name="Agent" parent="." unique_id=156105261 instance=ExtResource("3_h1dk6")]

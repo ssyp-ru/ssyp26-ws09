@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://bd7fmc0uqjp2p"]
+
+[ext_resource type="Script" uid="uid://cmxyvhttdrlk8" path="res://control.gd" id="1_jedsv"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_cdk1j"]
+font_size = 52
+
+[sub_resource type="LabelSettings" id="LabelSettings_ft8e1"]
+font_size = 52
+
+[sub_resource type="LabelSettings" id="LabelSettings_jedsv"]
+font_size = 58
+
+[node name="Control" type="Control" unique_id=1347960990]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_jedsv")
+
+[node name="Panel" type="Panel" parent="." unique_id=1003191144]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+
+[node name="Button" type="Button" parent="." unique_id=1136450159]
+layout_mode = 0
+offset_left = 310.0
+offset_top = 260.0
+offset_right = 810.0
+offset_bottom = 360.0
+
+[node name="Label" type="Label" parent="Button" unique_id=1379249981]
+layout_mode = 0
+offset_left = 216.0
+offset_top = 14.0
+offset_right = 284.0
+offset_bottom = 86.0
+text = "Да"
+label_settings = SubResource("LabelSettings_cdk1j")
+
+[node name="Button2" type="Button" parent="." unique_id=1128525989]
+layout_mode = 0
+offset_left = 310.0
+offset_top = 390.0
+offset_right = 810.0
+offset_bottom = 490.0
+
+[node name="Label" type="Label" parent="Button2" unique_id=1545923360]
+layout_mode = 0
+offset_left = 202.0
+offset_top = 14.0
+offset_right = 298.0
+offset_bottom = 86.0
+text = "Нет"
+label_settings = SubResource("LabelSettings_ft8e1")
+
+[node name="Label" type="Label" parent="." unique_id=1836164603]
+layout_mode = 0
+offset_left = 217.0
+offset_top = 63.0
+offset_right = 921.0
+offset_bottom = 142.0
+text = "Выйти в главное меню?"
+label_settings = SubResource("LabelSettings_jedsv")
+
+[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="Button2" to="." method="_on_button_2_pressed"]

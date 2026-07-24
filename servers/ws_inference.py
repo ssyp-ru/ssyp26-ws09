@@ -3,24 +3,25 @@ import json
 import torch
 import numpy as np
 import websockets
-from gym.spaces import Box, Discrete
+from gymnasium.spaces import Box, Discrete
 
-from ai.model import RLTwoLayerCfCModel
+from ai.model import RLTwoLayerCfcModel
 from ai.environment import MazeEnvironment
 
 SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 6543
+SERVER_PORT = 8000
+
 
 class AgentInference:
     def __init__(self, checkpoint_path: str, device: str = "cpu"):
         self.device = torch.device(device)
 
-        obs_space = Box(low=-1.0, high=2.0, shape=(61,), dtype=np.float32)
+        obs_space = Box(low=-1.0, high=1.0, shape=(11, 11), dtype=np.float32)
         action_space = Discrete(4)
         num_outputs = 4
         model_config = {}
 
-        self.model = RLTwoLayerCfCModel(obs_space, action_space, num_outputs, model_config, "inference_model")
+        self.model = RLTwoLayerCfcModel(obs_space, action_space, num_outputs, model_config, "inference_model")
 
         checkpoint = torch.load(checkpoint_path, map_location=self.device)
 
@@ -83,13 +84,18 @@ async def websocket_handler(websocket, agent: AgentInference, env: MazeEnvironme
                 agent.reset_memory()
                 
                 moves_list = []
+
+                last_pos = env.pos
    
                 for step_idx in range(actions_cnt):
                     act = agent.get_action(obs)
-       
-                    moves_list.append({"action": act})
-                    
+
                     obs, reward, done, truncated, info = env.step(act)
+
+                    if last_pos != env.pos:
+                        moves_list.append({"action": act})
+
+                        last_pos = env.pos
                     
                     if done or truncated:
                         break
@@ -110,7 +116,7 @@ async def websocket_handler(websocket, agent: AgentInference, env: MazeEnvironme
 
 
 async def main():
-    CHECKPOINT_PATH = "model_gen_65.pth" 
+    CHECKPOINT_PATH = "./models/model_gen_1.pth"
 
     agent = AgentInference(checkpoint_path=CHECKPOINT_PATH, device="cuda" if torch.cuda.is_available() else "cpu")
     print(f"Модель успешно загружена на устройство: {agent.device}")

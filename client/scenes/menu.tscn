@@ -1,0 +1,84 @@
+[gd_scene format=3 uid="uid://cqsw31kbmhgx2"]
+
+[ext_resource type="Script" uid="uid://bp1ywhpb88yam" path="res://scripts/menu.gd" id="1_vjb58"]
+[ext_resource type="PackedScene" uid="uid://d18ku3d420n1f" path="res://scenes/MazeMenu.tscn" id="2_mae5d"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_cdk1j"]
+font_size = 22
+
+[sub_resource type="LabelSettings" id="LabelSettings_ft8e1"]
+font_size = 32
+
+[sub_resource type="LabelSettings" id="LabelSettings_r4l3t"]
+font_size = 42
+
+[node name="Control" type="Control" unique_id=528209999]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_vjb58")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=677795387]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+color = Color(0.6, 0.6, 0.6, 1)
+
+[node name="Button" type="Button" parent="." unique_id=1923808126]
+layout_mode = 0
+offset_left = 387.0
+offset_top = 247.0
+offset_right = 793.0
+offset_bottom = 341.0
+
+[node name="Label" type="Label" parent="Button" unique_id=820572848]
+layout_mode = 0
+offset_left = 33.0
+offset_top = 29.0
+offset_right = 373.0
+offset_bottom = 60.0
+text = "Демонстрационный лабиринт"
+label_settings = SubResource("LabelSettings_cdk1j")
+
+[node name="Button2" type="Button" parent="." unique_id=1377078034]
+layout_mode = 0
+offset_left = 387.0
+offset_top = 352.0
+offset_right = 793.0
+offset_bottom = 446.0
+
+[node name="Label" type="Label" parent="Button2" unique_id=863247633]
+layout_mode = 0
+offset_left = 62.0
+offset_top = 26.0
+offset_right = 353.0
+offset_bottom = 71.0
+text = "Выбор лабиринта"
+label_settings = SubResource("LabelSettings_ft8e1")
+
+[node name="Button3" type="Button" parent="." unique_id=456939098]
+layout_mode = 0
+offset_left = 388.0
+offset_top = 455.0
+offset_right = 794.0
+offset_bottom = 549.0
+
+[node name="Label" type="Label" parent="Button3" unique_id=1786808125]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 15.0
+offset_right = 256.0
+offset_bottom = 73.0
+text = "Выход"
+label_settings = SubResource("LabelSettings_r4l3t")
+
+[node name="list_of_mazes" parent="." unique_id=1095188270 instance=ExtResource("2_mae5d")]
+visible = false
+layout_mode = 1
+
+[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="Button3" to="." method="_on_button_3_pressed"]

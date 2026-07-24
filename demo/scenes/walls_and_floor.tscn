@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://jna7jbpcp7gb"]
+
+[ext_resource type="PackedScene" uid="uid://due6ktfy7mqan" path="res://floor.tscn" id="1_tsw64"]
+[ext_resource type="PackedScene" uid="uid://djmsfle8vdwam" path="res://wall1.tscn" id="2_cq81v"]
+[ext_resource type="PackedScene" uid="uid://cji3klccou7e4" path="res://wall2.tscn" id="3_2u03j"]
+[ext_resource type="PackedScene" uid="uid://q2xxa4x77adh" path="res://wall3.tscn" id="4_bkyk1"]
+
+[node name="Node3D" type="Node3D" unique_id=548041123]
+
+[node name="MeshInstance3D2" parent="." unique_id=997137906 instance=ExtResource("2_cq81v")]
+
+[node name="MeshInstance3D3" parent="." unique_id=57459591 instance=ExtResource("3_2u03j")]
+
+[node name="MeshInstance3D4" parent="." unique_id=844005261 instance=ExtResource("4_bkyk1")]
+
+[node name="MeshInstance3D" parent="." unique_id=2055985912 instance=ExtResource("1_tsw64")]

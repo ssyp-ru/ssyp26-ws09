@@ -4,6 +4,7 @@ import bsc_core
 
 path = Path("../generations")
 target_path = Path("DB")
+MAZE_SIZE = 8
 
 for k, p in enumerate(path.iterdir()):
     with open(p, 'r') as file:
@@ -13,7 +14,8 @@ for k, p in enumerate(path.iterdir()):
     cur_dir.mkdir(parents=True, exist_ok=True)
 
     for l, e in enumerate(data):
-        maze = bsc_core.generate_with_genome(e["chromosome"], 128)
+        maze = bsc_core.generate_with_genome(e["chromosome"], MAZE_SIZE)
+        maze["mat"] = maze["mat"].tolist()
 
         with open(cur_dir.joinpath(f"chromosome_{l + 1}.json"), 'w') as file:
             json.dump(maze, file)

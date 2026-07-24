@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://xk64xk4odufe"]
+
+[ext_resource type="Script" uid="uid://bpingtsf5vhbs" path="res://scripts/main_menu.gd" id="1_fu7sn"]
+[ext_resource type="PackedScene" uid="uid://cqsw31kbmhgx2" path="res://scenes/menu.tscn" id="2_jix8l"]
+[ext_resource type="PackedScene" uid="uid://d18ku3d420n1f" path="res://scenes/MazeMenu.tscn" id="3_glbon"]
+
+[node name="Main menu" type="Control" unique_id=194000199]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_fu7sn")
+
+[node name="Control" parent="." unique_id=528209999 instance=ExtResource("2_jix8l")]
+layout_mode = 1
+
+[node name="Control2" parent="." unique_id=1095188270 instance=ExtResource("3_glbon")]
+visible = false
+layout_mode = 1
+
+[connection signal="pressed" from="Control/Button2" to="." method="_on_button_2_pressed"]
+[connection signal="pressed" from="Control2/to main menu" to="." method="_on_button_6_pressed"]
+[connection signal="pressed" from="Control2/to main menu" to="." method="_on_to_main_menu_pressed"]
+[connection signal="pressed" from="Control2/GridContainer/Ai play" to="." method="_on_ai_play_pressed"]
+
+[editable path="Control"]
+[editable path="Control2"]
