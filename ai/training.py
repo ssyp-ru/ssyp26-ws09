@@ -205,7 +205,7 @@ if __name__ == "__main__":
         )
 
         .resources(
-            num_gpus=1,
+            num_gpus=0,
             num_cpus_for_local_worker=1,
             num_cpus_per_worker=1
         )

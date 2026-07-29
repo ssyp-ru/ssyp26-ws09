@@ -1,9 +1,13 @@
 import torch
 import torch.nn as nn
 
+from ray.rllib.policy.view_requirement import ViewRequirement
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
+
 from ncps.torch import CfC
 from ncps.wirings import AutoNCP
+
+from gymnasium.spaces import Box
 
 class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
     def __init__(self, obs_space, action_space, num_outputs, model_config, name):
@@ -33,6 +37,20 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
         
         self.CfC_hidden_size = 256
         self.CfC_output_size = 128
+        
+        self.view_requirements["state_in_0"] = ViewRequirement(
+            "state_out_0",
+            shift=-1,
+            space=Box(low=-1.0, high=1.0, shape=(self.CfC_hidden_size,)),
+            used_for_training=True
+        )
+        
+        self.view_requirements["state_in_1"] = ViewRequirement(
+            "state_out_1",
+            shift=-1,
+            space=Box(low=-1.0, high=1.0, shape=(self.CfC_hidden_size,)),
+            used_for_training=True
+        )
 
         self.feature_extractor = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, padding=1),
@@ -70,21 +88,24 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
     def forward(self, input_dict, state, seq_lens):
         obs = input_dict["obs"]
         device = self.target_device
-	# ОПЯТЬ ДИЧЬ, Разобраться в реализации аналогов (костылей) tf.TimeDistributed и прочего на Pytorch.
+
         H, W = obs.shape[-2], obs.shape[-1]
+        B_total = obs.shape[0]
 
         if obs.dim() == 5:
             B, T, C, _, _ = obs.shape
             obs_square = obs.view(B * T, 1, H, W).contiguous()
+
         elif seq_lens is not None and seq_lens.shape[0] > 0:
-            B_total = obs.shape[0]
             B = seq_lens.shape[0]
             T = B_total // B
             obs_square = obs.view(B_total, 1, H, W).contiguous()
+
         elif obs.dim() == 4:
             B = obs.shape[0]
             T = 1
             obs_square = obs.view(B * T, 1, H, W).contiguous()
+
         else:
             obs_flat = obs.view(-1, 1, H, W)
             B = obs_flat.shape[0]
@@ -92,45 +113,32 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
             obs_square = obs_flat.contiguous()
 
         feature_flat = self.feature_extractor(obs_square)
+
         feature = feature_flat.view(B, T, self.CfC_input_size).contiguous()
 
         if state and len(state) >= 2:
             s0 = state[0].float().to(device)
             s1 = state[1].float().to(device)
 
-            s0_flat = s0.view(-1, self.CfC_hidden_size)
-            s1_flat = s1.view(-1, self.CfC_hidden_size)
+            hx = s0.view(-1, self.CfC_hidden_size)
+            cx = s1.view(-1, self.CfC_hidden_size)
 
-            if s0_flat.shape[0] != B:
-                if s0_flat.shape[0] < B:
-                    diff = B - s0_flat.shape[0]
+            if hx.shape[0] != B:
+                if hx.shape[0] < B:
+                    diff = B - hx.shape[0]
                     padding = torch.zeros((diff, self.CfC_hidden_size), device=device)
-                    s0_flat = torch.cat([s0_flat, padding], dim=0)
-                    s1_flat = torch.cat([s1_flat, padding], dim=0)
+                    hx = torch.cat([hx, padding], dim=0)
+                    cx = torch.cat([cx, padding], dim=0)
                 else:
-                    s0_flat = s0_flat[:B].contiguous()
-                    s1_flat = s1_flat[:B].contiguous()
-
-            if T > 1:
-                hx = s0_flat.unsqueeze(0)
-                cx = s1_flat.unsqueeze(0)
-            else:
-                hx = s0_flat
-                cx = s1_flat
+                    hx = hx[:B].contiguous()
+                    cx = cx[:B].contiguous()
         else:
-            if T > 1:
-                hx = torch.zeros((1, B, self.CfC_hidden_size), device=device)
-                cx = torch.zeros((1, B, self.CfC_hidden_size), device=device)
-            else:
-                hx = torch.zeros((B, self.CfC_hidden_size), device=device)
-                cx = torch.zeros((B, self.CfC_hidden_size), device=device)
+            hx = torch.zeros((B, self.CfC_hidden_size), device=device)
+            cx = torch.zeros((B, self.CfC_hidden_size), device=device)
 
         out_seq, (hx_next, cx_next) = self.cfc(feature, (hx, cx))
 
-        next_state = [
-            hx_next.view(-1, self.CfC_hidden_size).contiguous(), 
-            cx_next.view(-1, self.CfC_hidden_size).contiguous()
-        ]
+        next_state = [hx_next.contiguous(), cx_next.contiguous()]
 
         if seq_lens is not None and T > 1:
             max_len = out_seq.size(1)
@@ -144,7 +152,8 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
 
         logits = self.action_head(flat_out)
         values = self.value_head(flat_out)
-        self._cur_value = values.squeeze(-1)
+
+        self._cur_value = values.view(-1)
 
         if seq_lens is not None and T > 1:
             flat_mask = mask.view(-1).float()
@@ -161,8 +170,8 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
 
     def get_initial_state(self):
         return [
-            torch.zeros(self.CfC_hidden_size),
-            torch.zeros(self.CfC_hidden_size)
+            torch.zeros(self.CfC_hidden_size, dtype=torch.float32),
+            torch.zeros(self.CfC_hidden_size, dtype=torch.float32)
         ]
 
     def value_function(self):

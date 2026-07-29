@@ -130,7 +130,7 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
         logits = self.action_head(flat_out)
         values = self.value_head(flat_out)
 
-        self._cur_value = values.squeeze(-1)
+        self._cur_value = values.view(-1)
 
         if seq_lens is not None and T > 1:
             flat_mask = mask.view(-1).float()
