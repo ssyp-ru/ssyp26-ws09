@@ -184,57 +184,55 @@ public:
     }
     
 	py::array_t<float> get_square_observe_with_shadow(py::array_t<float> maze, int x, int y) const {
-        int side = 2 * this->radius + 1;
- 
-        py::array_t<float> result({side, side});
-        auto res_view = result.mutable_unchecked<2>();
-        auto maze_view = maze.unchecked<2>();
+		int side = 2 * this->radius + 1;
 
-        std::fill_n(result.mutable_data(), result.size(), WALL);
+		py::array_t<float> result({side, side});
+		auto res_view = result.mutable_unchecked<2>();
+		auto maze_view = maze.unchecked<2>();
 
-        for (const auto& offset : this->diamond_offsets) {
-            int sx = offset.dx + x;
-            int sy = offset.dy + y;
+		std::fill_n(result.mutable_data(), result.size(), WALL);
 
-            int local_row = this->radius - offset.dy;
-            int local_col = offset.dx + this->radius;
+		std::vector<bool> visible_mask(side * side, false);
 
-            if (sx < 0 || sx >= maze_view.shape(1) || sy < 0 || sy >= maze_view.shape(0)) {
-                res_view(local_row, local_col) = WALL;
-            } else {
-                res_view(local_row, local_col) = maze_view(sy, sx);
-            }
-        }
+		for (const auto& ray : this->diamond_rays) {
+		    bool shadow_activate = false;
+		
+		    for (auto ray_elm : ray) {
+				Offset offset = this->diamond_offsets[ray_elm];
+				
+				int local_row = this->radius - offset.dy;
+				int local_col = offset.dx + this->radius;
+				int mask_idx = local_row * side + local_col;
 
-        for (const auto& ray : this->diamond_rays) {
-            bool shadow_activate = false;
-        
-            for (auto ray_elm : ray) {
-                Offset offset = this->diamond_offsets[ray_elm];
-                
-                int local_row = this->radius - offset.dy;
-                int local_col = offset.dx + this->radius;
+				int sx = offset.dx + x;
+				int sy = offset.dy + y;
 
-                if (shadow_activate) {
-                    res_view(local_row, local_col) = SHADOW;
-                    continue;
-                }
+				if (shadow_activate) {
+					if (!visible_mask[mask_idx]) {
+					    res_view(local_row, local_col) = SHADOW;
+					}
+					
+					continue;
+				}
 
-                int sx = offset.dx + x;
-                int sy = offset.dy + y;
+				if (sx < 0 || sx >= maze_view.shape(1) || sy < 0 || sy >= maze_view.shape(0)) {
+					res_view(local_row, local_col) = WALL;
+					visible_mask[mask_idx] = true;
+					shadow_activate = true;
+				}  else if (maze_view(sy, sx) == WALL) {
+					res_view(local_row, local_col) = WALL;
+					visible_mask[mask_idx] = true;
+					shadow_activate = true;
+				} else {
+					res_view(local_row, local_col) = maze_view(sy, sx);
+					visible_mask[mask_idx] = true;
+				}
+	    	}
+	
+		}
 
-                if (sx < 0 || sx >= maze_view.shape(1) || sy < 0 || sy >= maze_view.shape(0)) {
-                    res_view(local_row, local_col) = WALL;
-                    shadow_activate = true;
-                } else if (maze_view(sy, sx) == WALL) {
-                    res_view(local_row, local_col) = WALL;
-                    shadow_activate = true;
-                }
-            }
-        }
-
-        return result;
-    }
+		return result;
+	}
 
 };
 
@@ -268,7 +266,7 @@ py::array_t<int> maze_bfs(py::array_t<float> maze, int x, int y) {
                 continue;
 
             float cell_val = maze_mat(to.second, to.first);
-            if ((cell_val == EMPTY || cell_val == FINISH) && dist(to.second, to.first) > dist(from.second, from.first) + 1) {
+            if ((cell_val == EMPTY || cell_val == FINISH) && dist(to.second, to.first) == INF) {
                 q.push(to);
                 dist(to.second, to.first) = dist(from.second, from.first) + 1;
             }

@@ -54,63 +54,43 @@ py::dict generate_with_genome(const std::string& genome, int size) {
     auto maze_view = maze.mutable_unchecked<2>();
     std::fill_n(maze.mutable_data(), maze.size(), C_WALL);
 
-    int rot = 0;
-    int x = pg.pr_x;
-    int y = pg.pr_y;
+    auto run_generator = [&](const std::string& gen, float fill_val, std::vector<int>& out_pos) {
+        int x = pg.pr_x;
+        int y = pg.pr_y;
+        int rot = 0;
 
-    for (char i : pg.gen1) {
-        if (x >= 0 && x < size && y >= 0 && y < size) {
+        for (char i : gen) {
+            x = std::max(0, std::min(size - 1, x));
+            y = std::max(0, std::min(size - 1, y));
             maze_view(x, y) = C_EMPTY;
+
+            if (i == 'F') {
+                int dir = (rot % 4 + 4) % 4; 
+                if (dir == 0)      x += 1;
+                else if (dir == 1) y += 1;
+                else if (dir == 2) x -= 1;
+                else               y -= 1;
+            }
+            else if (i == '+') rot += 1;
+            else if (i == '-') rot -= 1;
+
+            if (x >= size) { x = size - 1; rot += 2; }
+            if (y >= size) { y = size - 1; rot += 2; }
+            if (x < 0)     { x = 0; rot += 2; }
+            if (y < 0)     { y = 0; rot += 2; }
         }
 
-        if (i == 'F') {
-            if (rot % 4 == 0)      x += 1;
-            else if (rot % 4 == 1) y += 1;
-            else if (rot % 4 == 2) x -= 1;
-            else                   y -= 1;
-        }
-        else if (i == '+') rot += 1;
-        else if (i == '-') rot -= 1;
+        x = std::max(0, std::min(size - 1, x));
+        y = std::max(0, std::min(size - 1, y));
+        maze_view(x, y) = fill_val;
+        out_pos = {x, y};
+    };
 
-        if (x >= size) { x -= 2; rot += 2; }
-        if (y >= size) { y -= 2; rot += 2; }
-        if (x < 0)     { x += 2; rot += 2; }
-        if (y < 0)     { y += 2; rot += 2; }
-    }
+    std::vector<int> start_pos;
+    std::vector<int> finish_pos;
 
-    std::vector<int> start_pos = {x, y};
-    if (x >= 0 && x < size && y >= 0 && y < size) {
-        maze_view(x, y) = C_EMPTY;
-    }
-
-    rot = 0;
-    x = pg.pr_x;
-    y = pg.pr_y;
-
-    for (char i : pg.gen2) {
-        if (x >= 0 && x < size && y >= 0 && y < size) {
-            maze_view(x, y) = C_EMPTY;
-        }
-
-        if (i == 'F') {
-            if (rot % 4 == 0)      x += 1;
-            else if (rot % 4 == 1) y += 1;
-            else if (rot % 4 == 2) x -= 1;
-            else                   y -= 1;
-        }
-        else if (i == '+') rot += 1;
-        else if (i == '-') rot -= 1;
-
-        if (x >= size) { x -= 2; rot += 2; }
-        if (y >= size) { y -= 2; rot += 2; }
-        if (x < 0)     { x += 2; rot += 2; }
-        if (y < 0)     { y += 2; rot += 2; }
-    }
-
-    std::vector<int> finish_pos = {x, y};
-    if (x >= 0 && x < size && y >= 0 && y < size) {
-        maze_view(x, y) = C_FINISH;
-    }
+    run_generator(pg.gen1, C_EMPTY, start_pos);
+    run_generator(pg.gen2, C_FINISH, finish_pos);
 
     py::dict result;
     result["mat"] = maze;
@@ -118,6 +98,7 @@ py::dict generate_with_genome(const std::string& genome, int size) {
     result["finish"] = finish_pos;
     return result;
 }
+
 
 std::string crossover(const std::string& genome1, const std::string& genome2) {
     ParsedGenome p1 = parse_genome(genome1);

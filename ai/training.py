@@ -3,15 +3,18 @@ import os
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 import json
 import ray
 from ray.rllib.models import ModelCatalog
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.tune.logger import NoopLogger
 
-from genetic_algorithm import GAMazeManager, CoEvolutionCallback
-from model import RLTwoLayerCfcModel
-from environment import MazeEnvironment
+from ai.genetic_algorithm import GAMazeManager, CoEvolutionCallback
+from ai.model import RLTwoLayerCfcModel
+from ai.environment import MazeEnvironment
 
 import torch
 
@@ -110,12 +113,12 @@ def load_last_epoch(generations_log: str, ga_manager) -> int:
     return 0
 
 
-def check_and_update_curriculum(algo, ga_manager, current_size, avg_reward):
-    SUCCESS_THRESHOLD = 70
+def check_and_update_curriculum(algo, ga_manager, current_size, avg_ratio):
+    SUCCESS_THRESHOLD = 0.75
     MAX_SIZE = 128
-    MAZE_SIZE_STEP = 8
+    MAZE_SIZE_STEP = 2
     
-    if avg_reward >= SUCCESS_THRESHOLD and current_size < MAX_SIZE:
+    if avg_ratio >= SUCCESS_THRESHOLD and current_size < MAX_SIZE:
         new_size = current_size + MAZE_SIZE_STEP
         if new_size > MAX_SIZE:
             new_size = MAX_SIZE
@@ -148,8 +151,7 @@ if __name__ == "__main__":
     EPOCHS = 256
     MAZE_SIZE = 8
     GENERATION_SIZE = 32
-
-    STEPS_PER_CHROMOSOME = 1
+    STEPS_PER_CHROMOSOME = 128
 
     ga_manager = GAMazeManager.remote(GENERATION_SIZE, MAZE_SIZE)
 
@@ -166,34 +168,40 @@ if __name__ == "__main__":
                 "maze_size": MAZE_SIZE,
                 "diamond_radius": 5,
                 "maze_manager": ga_manager
-            }
+            },
+            normalize_actions=True
         )
 
         .callbacks(callbacks_class=lambda: CoEvolutionCallback(ga_manager))
 
         .framework("torch")
 
-        .rollouts(
-            num_rollout_workers=6,
-            rollout_fragment_length='auto',
-            batch_mode="complete_episodes",
-        )
+		.rollouts(
+			num_rollout_workers=4,
+			rollout_fragment_length='auto',
+			batch_mode="complete_episodes"
+		)
+
 
         .training(
-            lr=3e-4,
-            gamma=0.99,
-            train_batch_size=2048,
-            num_sgd_iter=5,
-            entropy_coeff=0.01,
-            sgd_minibatch_size=512,
-            vf_clip_param=10.0,
-            vf_loss_coeff=0.5,
+            lr=5e-5,
+            gamma=0.97,
+            train_batch_size=4096,
+            num_sgd_iter=3,
+            entropy_coeff=0.15,
+            sgd_minibatch_size=256,
+            vf_clip_param=0.5,
+            vf_loss_coeff=0.05,
             clip_param=0.2,
             model={
                 "custom_model": "maze_agent_cfc_model",
-                "max_seq_len": 64,
-                "use_lstm": False
-            }
+                "max_seq_len": 128,
+                "use_lstm": False,
+                "custom_model_config": {
+                	"device": ("cuda:0" if torch.cuda.is_available() else "cpu")
+                }
+            },
+            grad_clip=1.0
         )
 
         .resources(
@@ -214,7 +222,7 @@ if __name__ == "__main__":
 
     actual_start = max(actual_start_ga, start_generation_weights)
 
-    print(f"Старт обучения. Начинаем строго с поколения №{actual_start}")
+    print(f"Старт обучения. Начинаем с поколения №{actual_start}")
 
     current_maze_size = MAZE_SIZE
 
@@ -222,14 +230,21 @@ if __name__ == "__main__":
         print(f"\n=== Начало поколения {generation} ===")
 
         ray.get(ga_manager.set_visits.remote())
-
+        
+        indx = 0
         while not ray.get(ga_manager.evolve_if_ready.remote(min_sample_per_chrome=STEPS_PER_CHROMOSOME)):
+            indx += 1
+            
             train_results = algo.train()
+            
             avg_reward = train_results.get("episode_reward_mean", 0)
+            
+            custom_metrics = train_results.get("custom_metrics", {})
+            avg_step_ratio = ray.get(ga_manager.get_avg_steps_ratio.remote())
 
-            current_maze_size = check_and_update_curriculum(algo, ga_manager, current_maze_size, avg_reward)
+            current_maze_size = check_and_update_curriculum(algo, ga_manager, current_maze_size, avg_step_ratio)
 
-            print(f"Итерация обучения. Средняя награда по батчу: {avg_reward:.2f}")
+            print(f"Итерация обучения №{indx}. Средняя награда по батчу: {avg_reward:.2f}. Отношение идеала к результату: {avg_step_ratio:.2f}")
 
         save_pure_weights(algo, generation, CHECKPOINT_DIR)
 
@@ -237,7 +252,7 @@ if __name__ == "__main__":
         population_data = ray.get(ga_manager.get_population.remote())
         fitness_scores = ray.get(ga_manager.get_fitness_scores.remote())
 
-        data = [{"chromosome": p, "fitness_score": f} for p, f in zip(population_data, fitness_scores)]
+        data = [{"chromosome": p, "fitness_score": f, "maze_size": current_maze_size} for p, f in zip(ray.get(population_data), fitness_scores)]
         with open(Path(GENERATIONS_LOG).joinpath(f"generation_{generation}.json"), 'w') as file:
             json.dump(data, file, indent=4)
 

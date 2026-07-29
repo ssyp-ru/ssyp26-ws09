@@ -70,21 +70,20 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
     def forward(self, input_dict, state, seq_lens):
         obs = input_dict["obs"]
         device = self.target_device
-	# ОПЯТЬ ДИЧЬ, Разобраться в реализации аналогов (костылей) tf.TimeDistributed и прочего на Pytorch.
+
         H, W = obs.shape[-2], obs.shape[-1]
 
         if obs.dim() == 5:
             B, T, C, _, _ = obs.shape
             obs_square = obs.view(B * T, 1, H, W).contiguous()
-        elif seq_lens is not None and seq_lens.shape[0] > 0:
-            B_total = obs.shape[0]
-            B = seq_lens.shape[0]
-            T = B_total // B
-            obs_square = obs.view(B_total, 1, H, W).contiguous()
+
         elif obs.dim() == 4:
             B = obs.shape[0]
             T = 1
+            C = obs.shape[1]
+
             obs_square = obs.view(B * T, 1, H, W).contiguous()
+
         else:
             obs_flat = obs.view(-1, 1, H, W)
             B = obs_flat.shape[0]
@@ -98,39 +97,24 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
             s0 = state[0].float().to(device)
             s1 = state[1].float().to(device)
 
-            s0_flat = s0.view(-1, self.CfC_hidden_size)
-            s1_flat = s1.view(-1, self.CfC_hidden_size)
+            hx = s0.unsqueeze(0) if s0.dim() == 1 else s0
+            cx = s1.unsqueeze(0) if s1.dim() == 1 else s1
 
-            if s0_flat.shape[0] != B:
-                if s0_flat.shape[0] < B:
-                    diff = B - s0_flat.shape[0]
+            if hx.shape[0] != B:
+                if hx.shape[0] < B:
+                    diff = B - hx.shape[0]
                     padding = torch.zeros((diff, self.CfC_hidden_size), device=device)
-                    s0_flat = torch.cat([s0_flat, padding], dim=0)
-                    s1_flat = torch.cat([s1_flat, padding], dim=0)
+                    hx = torch.cat([hx, padding], dim=0)
+                    cx = torch.cat([cx, padding], dim=0)
                 else:
-                    s0_flat = s0_flat[:B].contiguous()
-                    s1_flat = s1_flat[:B].contiguous()
-
-            if T > 1:
-                hx = s0_flat.unsqueeze(0)
-                cx = s1_flat.unsqueeze(0)
-            else:
-                hx = s0_flat
-                cx = s1_flat
+                    hx = hx[:B].contiguous()
+                    cx = cx[:B].contiguous()
         else:
-            if T > 1:
-                hx = torch.zeros((1, B, self.CfC_hidden_size), device=device)
-                cx = torch.zeros((1, B, self.CfC_hidden_size), device=device)
-            else:
-                hx = torch.zeros((B, self.CfC_hidden_size), device=device)
-                cx = torch.zeros((B, self.CfC_hidden_size), device=device)
+            hx = torch.zeros((B, self.CfC_hidden_size), device=device)
+            cx = torch.zeros((B, self.CfC_hidden_size), device=device)
 
         out_seq, (hx_next, cx_next) = self.cfc(feature, (hx, cx))
-
-        next_state = [
-            hx_next.view(-1, self.CfC_hidden_size).contiguous(), 
-            cx_next.view(-1, self.CfC_hidden_size).contiguous()
-        ]
+        next_state = [hx_next.contiguous(), cx_next.contiguous()]
 
         if seq_lens is not None and T > 1:
             max_len = out_seq.size(1)
@@ -140,10 +124,12 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
             out_seq = out_seq * mask.unsqueeze(-1).float()
 
         flat_out = out_seq.contiguous().view(B * T, -1)
+
         self._last_output = flat_out
 
         logits = self.action_head(flat_out)
         values = self.value_head(flat_out)
+
         self._cur_value = values.squeeze(-1)
 
         if seq_lens is not None and T > 1:
@@ -151,7 +137,6 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
             self._cur_value = self._cur_value * flat_mask
 
         return logits, next_state
-
 
     def last_output(self):
         return self._last_output if hasattr(self, "_last_output") else None

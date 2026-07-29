@@ -35,7 +35,7 @@ def generate_with_genome(genome, size):
 
         if i == '-':
             rot -= 1
-
+	# Бездарный отскок: возможна потеря топологической связности.
         if x >= size:
             x -= 2
             rot += 2
@@ -76,7 +76,7 @@ def generate_with_genome(genome, size):
 
         if i == '-':
             rot -= 1
-
+	# Бездарный отскок: возможна потеря топологической связности.
         if x >= size:
             x -= 2
             rot += 2

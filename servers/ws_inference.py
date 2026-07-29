@@ -39,7 +39,7 @@ class AgentInference:
         self.current_state = [s.to(self.device) for s in self.model.get_initial_state()]
         
     def reset_memory(self):
-        self.current_state = [s.to(self.device) for s in self.model.get_initial_state()]
+    	self.current_state = [s.to(self.device) for s in self.model.get_initial_state()]
 
     def get_action(self, obs: np.ndarray) -> int:
         with torch.no_grad():

@@ -5,11 +5,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import bsc_core
 import json
+import gc
+
 from pathlib import Path
 
 from matplotlib.colors import ListedColormap
 
-MAZE_SIZE = 8
 GENERATIONS_DIR = "../generations"
 GENDEMO_DIR = "./demo_generations/"
 
@@ -39,17 +40,17 @@ for generation in sorted(valid_generations, key=get_generation_number):
     with open(str(generation), 'r') as file:
         population_data = json.load(file)
         
-    chromosomes = [(e["chromosome"], e["fitness_score"]) for e in population_data]
+    chromosomes = [(e["chromosome"], e["fitness_score"], e["maze_size"]) for e in population_data]
         
     print(f"=== Генерация изображений поколения №{g} ===")
     gendemo_path.joinpath(f"generation{g}").mkdir(parents=True, exist_ok=True)
         
-    for k, (chromosome, fitness_score) in enumerate(chromosomes):
+    for k, (chromosome, fitness_score, maze_size) in enumerate(chromosomes):
         if g == cur_generations and k + 1 < cur_genome:
             continue
     
         print(f"Отрисовка генома №{k + 1}...")
-        maze_dict = bsc_core.generate_with_genome(chromosome, MAZE_SIZE)
+        maze_dict = bsc_core.generate_with_genome(chromosome, maze_size)
 
         matrix = maze_dict.get("mat")
         start_pos = maze_dict.get("start")
@@ -86,6 +87,9 @@ for generation in sorted(valid_generations, key=get_generation_number):
         ax.axis("off")
 
         output_path = gendemo_path.joinpath(f"generation{g}").joinpath(f"genome{k + 1}.png")
+        
         plt.savefig(output_path, bbox_inches="tight")
-        plt.close()
+        plt.close(fig)
+        
+    gc.collect()
 
