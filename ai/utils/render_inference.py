@@ -18,9 +18,16 @@ from ai.model import RLTwoLayerCfcModel
 from ai.environment import MazeEnvironment
 from ai.training import load_model
 
-def render_agent_trajectory(checkpoint_path: str, chromosome_json_path: str, output_image_path: str = "agent_trajectory.png", idx: int = 10, maze_size: int = 8):
+def render_agent_trajectory(checkpoint_path: str, chromosome_json_path: str, output_image_path: str = "agent_trajectory.png", idx: int = 10):
     device = "cpu"
     print(f"[ИНФЕРЕНС] Используем устройство: {device}")
+    
+    with open(chromosome_json_path, 'r') as file:
+        population_data = json.load(file)
+
+    target_data = population_data[idx]
+    chromosome = target_data["chromosome"]
+    maze_size = target_data["maze_size"]
     
     config = (
         PPOConfig()
@@ -30,7 +37,7 @@ def render_agent_trajectory(checkpoint_path: str, chromosome_json_path: str, out
         .environment(
             env=MazeEnvironment,
             env_config={
-                "maze_size": MAZE_SIZE,
+                "maze_size": maze_size,
                 "diamond_radius": 5,
                 "maze_manager": None
             },
@@ -78,13 +85,6 @@ def render_agent_trajectory(checkpoint_path: str, chromosome_json_path: str, out
 
     algo = config.build(logger_creator=lambda conf: NoopLogger(config=conf, logdir="/tmp", trial=None))
     load_model(algo, checkpoint_path)
-
-    with open(chromosome_json_path, 'r') as file:
-        population_data = json.load(file)
-
-    target_data = population_data[idx]
-    chromosome = target_data["chromosome"]
-    maze_size = target_data["maze_size"]
 
     env_config = {"maze_size": maze_size, "diamond_radius": 5, "maze_manager": None}
     env = MazeEnvironment(config=env_config)
@@ -165,11 +165,10 @@ def render_agent_trajectory(checkpoint_path: str, chromosome_json_path: str, out
     print(f"💾 График траектории успешно сохранен в: {output_image_path}")
 
 if __name__ == "__main__":
-    PATH_TO_WEIGHTS = "../models/model_gen_23.pth" 		
-    PATH_TO_JSON = "../generations/generation_23.json" 	
-    CHROMOSOME_IDX = 10 						
-    MAZE_SIZE = 8							
+    PATH_TO_WEIGHTS = "../models/model_gen_25.pth" 		
+    PATH_TO_JSON = "../generations/generation_25.json" 	
+    CHROMOSOME_IDX = 16 												
     
-    render_agent_trajectory(PATH_TO_WEIGHTS, PATH_TO_JSON, "agent_trajectory.png", CHROMOSOME_IDX, MAZE_SIZE)
+    render_agent_trajectory(PATH_TO_WEIGHTS, PATH_TO_JSON, "agent_trajectory.png", CHROMOSOME_IDX)
 
 

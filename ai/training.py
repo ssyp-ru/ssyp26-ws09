@@ -81,23 +81,29 @@ def load_model(algo, checkpoint_path: str):
     algo.workers.local_worker().set_weights({"default_policy": algo.get_policy("default_policy").get_weights()})
     algo.workers.sync_weights()
 
-def load_last_epoch(generations_log: str, ga_manager) -> int:
+def load_last_epoch(generations_log: str, start_chromosomes_cnt: int, start_maze_size: int):
     log_path = Path(generations_log)
     if log_path.is_dir() and any(log_path.iterdir()):
         json_files = [f for f in log_path.iterdir() if "generation_" in f.name and f.suffix == ".json"]
         if not json_files:
-            return 0
+            return GAMazeManager.remote(start_chromosomes_cnt, start_maze_size), start_maze_size, 0
+            
         last_generation = max(int(fn.name[len("generation_"):-5]) for fn in json_files)
     else:
-        return 0
+        return GAMazeManager.remote(start_chromosomes_cnt, start_maze_size), start_maze_size, 0
 
     start_generation_path = log_path.joinpath(f"generation_{last_generation}.json")
 
     if start_generation_path.is_file():
         with open(start_generation_path, 'r') as file:
             start_population_data = json.load(file)
+            
         start_population = [d["chromosome"] for d in start_population_data]
         start_fitness = [d["fitness_score"] for d in start_population_data]
+        start_maze_size = start_population_data[0]["maze_size"]
+        start_chromosomes_cnt = len(start_population)
+        
+        ga_manager = GAMazeManager.remote(start_chromosomes_cnt, start_maze_size)
 
         ray.get(ga_manager.set_population.remote(start_population))
 
@@ -108,38 +114,64 @@ def load_last_epoch(generations_log: str, ga_manager) -> int:
             f"[ГА] Успешно загружено поколение {last_generation}. Проводим селекцию для перехода к {last_generation + 1}...")
         ray.get(ga_manager.new_generation_with_ready_fitness_scores.remote())
 
-        return last_generation + 1
+        return ga_manager, start_maze_size, last_generation + 1
 
-    return 0
+    return GAMazeManager.remote(start_chromosomes_cnt, start_maze_size), start_maze_size, 0
 
 
-def check_and_update_curriculum(algo, ga_manager, current_size, avg_ratio):
-    SUCCESS_THRESHOLD = 0.75
+def check_and_update_curriculum(algo, ga_manager, current_size, avg_ratio, avg_reward=0.0):
+    if avg_ratio <= 0.0:
+        return current_size
+
+    adaptive_threshold = 0.25 + 0.5 * (8.0 / (current_size + 8.0))
     MAX_SIZE = 128
     MAZE_SIZE_STEP = 2
-    
-    if avg_ratio >= SUCCESS_THRESHOLD and current_size < MAX_SIZE:
+
+    if avg_ratio >= adaptive_threshold and current_size < MAX_SIZE and avg_reward >= 0.0:
         new_size = current_size + MAZE_SIZE_STEP
         if new_size > MAX_SIZE:
             new_size = MAX_SIZE
             
-        print(f"\n🚀 [CURRICULUM] Масштаб {current_size} успешно освоен (Средняя награда: {avg_reward:.2f})!")
-        print(f"📈 [CURRICULUM] Переводим систему на новый уровень: {new_size}x{new_size}...\n")
-  
-        ray.get(ga_manager.update_maze_size.remote(new_size))
-        ray.get(ga_manager.generate_start_population.remote())
+        print(f"\n🚀 [CURRICULUM] Масштаб {current_size} официально покорен!")
+        print(f"📈 [CURRICULUM] Переводим систему на новый уровень сложности: {new_size}x{new_size}...\n")
 
-        algo.evaluation_config["env_config"]["maze_size"] = new_size
-  
+        try:
+            trained_weights = algo.get_policy().model.state_dict()
+            os.makedirs("./models", exist_ok=True)
+            filename = f"./models/model_scale_{current_size}_perfect.pth"
+            torch.save(trained_weights, filename)
+        except Exception as e:
+            print(f"⚠️ Ошибка автосохранения весов: {e}")
+
+        ray.get(ga_manager.update_maze_size.remote(new_size))
+        
+        ray.get(ga_manager.reset_ratio_steps.remote())
+
+        def reset_env_cache_completely(env_instance):
+            raw_env = env_instance.unwrapped if hasattr(env_instance, "unwrapped") else env_instance
+            raw_env.maze_size = new_size
+            raw_env.local_epoch_cache = None
+            raw_env.last_fetched_ref = None
+            raw_env.current_chromosome = None
+            
+            import numpy as np
+            raw_env.visited = np.zeros((new_size, new_size), dtype=np.int32)
+
         algo.workers.foreach_worker(
-            lambda worker: worker.foreach_env(
-                lambda env: (
-                    setattr(env, "maze_size", new_size),
-                    setattr(env, "current_chromosome", None)
-                )
-            )
+            lambda worker: worker.foreach_env(reset_env_cache_completely)
         )
+
+        if new_size >= 16:
+            def update_gamma_on_worker(worker):
+                if worker.policy_map and "default_policy" in worker.policy_map:
+                    policy = worker.policy_map["default_policy"]
+                    policy.config["gamma"] = 0.995
+                    if hasattr(policy, "gamma"):
+                        policy.gamma = 0.995
+            algo.workers.foreach_worker(update_gamma_on_worker)
+
         return new_size
+        
     return current_size
 
 
@@ -153,7 +185,7 @@ if __name__ == "__main__":
     GENERATION_SIZE = 32
     STEPS_PER_CHROMOSOME = 128
 
-    ga_manager = GAMazeManager.remote(GENERATION_SIZE, MAZE_SIZE)
+    ga_manager, maze_size, actual_start_ga = load_last_epoch(GENERATIONS_LOG, GENERATION_SIZE, MAZE_SIZE)
 
     ModelCatalog.register_custom_model("maze_agent_cfc_model", RLTwoLayerCfcModel)
 
@@ -165,7 +197,7 @@ if __name__ == "__main__":
         .environment(
             env=MazeEnvironment,
             env_config={
-                "maze_size": MAZE_SIZE,
+                "maze_size": maze_size,
                 "diamond_radius": 5,
                 "maze_manager": ga_manager
             },
@@ -212,9 +244,7 @@ if __name__ == "__main__":
 
         .debugging(log_level="INFO")
     )
-
-    actual_start_ga = load_last_epoch(GENERATIONS_LOG, ga_manager)
-
+    
     algo = config.build(logger_creator=lambda conf: NoopLogger(config=conf, logdir="/tmp", trial=None))
 
     start_generation_weights = load_pure_weights_to_algorithm(algo, CHECKPOINT_DIR)
@@ -222,9 +252,9 @@ if __name__ == "__main__":
 
     actual_start = max(actual_start_ga, start_generation_weights)
 
-    print(f"Старт обучения. Начинаем с поколения №{actual_start}")
+    print(f"Старт обучения. Начинаем с поколения №{actual_start}. Размер лабиринта: {maze_size}.")
 
-    current_maze_size = MAZE_SIZE
+    current_maze_size = maze_size
 
     for generation in range(actual_start, EPOCHS):
         print(f"\n=== Начало поколения {generation} ===")
@@ -238,11 +268,7 @@ if __name__ == "__main__":
             train_results = algo.train()
             
             avg_reward = train_results.get("episode_reward_mean", 0)
-            
-            custom_metrics = train_results.get("custom_metrics", {})
             avg_step_ratio = ray.get(ga_manager.get_avg_steps_ratio.remote())
-
-            current_maze_size = check_and_update_curriculum(algo, ga_manager, current_maze_size, avg_step_ratio)
 
             print(f"Итерация обучения №{indx}. Средняя награда по батчу: {avg_reward:.2f}. Отношение идеала к результату: {avg_step_ratio:.2f}")
 
@@ -255,6 +281,11 @@ if __name__ == "__main__":
         data = [{"chromosome": p, "fitness_score": f, "maze_size": current_maze_size} for p, f in zip(ray.get(population_data), fitness_scores)]
         with open(Path(GENERATIONS_LOG).joinpath(f"generation_{generation}.json"), 'w') as file:
             json.dump(data, file, indent=4)
+        
+        avg_reward = train_results.get("episode_reward_mean", 0)
+        avg_step_ratio = ray.get(ga_manager.get_last_epoch_avg_steps_ratio.remote())
+        
+        current_maze_size = check_and_update_curriculum(algo, ga_manager, current_maze_size, avg_step_ratio, avg_reward)
 
     algo.stop()
     ray.shutdown()

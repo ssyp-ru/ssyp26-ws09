@@ -133,6 +133,7 @@ class GAMazeManager:
 
         self.rewards = [[] for _ in range(self.population_size)]
         self.ratio_steps_avg = np.mean(np.concatenate(self.ratio_steps_arr))
+        self.temp_ratio_steps_avg = self.ratio_steps_avg
         self.ratio_steps_arr = [[] for _ in range(self.population_size)]
         self.current_generation += 1
 
@@ -187,8 +188,15 @@ class GAMazeManager:
 
     def get_avg_steps_ratio(self):
         self.ratio_steps_avg = np.mean(np.concatenate(self.ratio_steps_arr))
-
+ 
         return self.ratio_steps_avg
+        
+    def get_last_epoch_avg_steps_ratio(self):
+        return self.temp_ratio_steps_avg
+        
+    def reset_ratio_steps(self):
+        self.ratio_steps_avg = 0
+        self.ratio_steps_arr = [[] for _ in range(self.population_size)]
 
 
 class CoEvolutionCallback(DefaultCallbacks):
@@ -246,6 +254,13 @@ class CoEvolutionCallback(DefaultCallbacks):
             agent_reward = episode.get_return()
         else:
             agent_reward = episode.total_reward
+        
+        is_truncated = False    
+        if hasattr(episode, "truncated"):
+            if isinstance(episode.truncated, dict):
+                is_truncated = episode.truncated.get("__all__", False)
+            else:
+                is_truncated = bool(episode.truncated)
 
         if base_env is not None:
             sub_envs = base_env.get_sub_environments()
@@ -263,5 +278,5 @@ class CoEvolutionCallback(DefaultCallbacks):
                     ideal_reward = (start_bfs_dist / raw_env.maze_size) * 2.0 + 2.0 - (start_bfs_dist * (1.0 / max(128, raw_env.maze_size * 2)))
 
                     self.ga_mng.record_ideal_reward.remote(chrom_idx, ideal_reward)
-                    self.ga_mng.record_steps_ratio.remote(chrom_idx, raw_env.dists[raw_env.start[1], raw_env.start[0]] / raw_env.steps_cnt)
+                    self.ga_mng.record_steps_ratio.remote(chrom_idx, raw_env.dists[raw_env.start[1], raw_env.start[0]] / (raw_env.steps_cnt if not is_truncated else raw_env.maze_size * raw_env.maze_size))
 

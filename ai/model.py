@@ -62,8 +62,10 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
             nn.Flatten(),
 
             nn.Linear(32 * self.visual_accuracy * self.visual_accuracy, self.CfC_input_size),
-            nn.ReLU()
+            nn.Tanh()
         ).to(self.target_device)
+        
+        self.feature_norm = nn.LayerNorm(self.CfC_input_size).to(self.target_device)
 
         self.wiring = AutoNCP(self.CfC_hidden_size, self.CfC_output_size)
 
@@ -76,8 +78,6 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
         
         if hasattr(self.cfc, "cell"):
             self.cfc.cell.to(self.target_device)
-
-        self.norm = nn.LayerNorm(self.CfC_output_size).to(self.target_device)
 
         self.action_head = nn.Linear(self.CfC_output_size, num_outputs).to(self.target_device)
         self.value_head = nn.Linear(self.CfC_output_size, 1).to(self.target_device)
@@ -113,6 +113,7 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
             obs_square = obs_flat.contiguous()
 
         feature_flat = self.feature_extractor(obs_square)
+        feature_flat = self.feature_norm(feature_flat)
 
         feature = feature_flat.view(B, T, self.CfC_input_size).contiguous()
 
@@ -160,7 +161,6 @@ class RLTwoLayerCfcModel(TorchModelV2, nn.Module):
             self._cur_value = self._cur_value * flat_mask
 
         return logits, next_state
-
 
     def last_output(self):
         return self._last_output if hasattr(self, "_last_output") else None
